@@ -2,27 +2,25 @@
 FROM golang:1.22 AS build
 WORKDIR /app
 
-ENV GOPROXY=https://proxy.golang.org,direct
-ENV GOSUMDB=sum.golang.org
+# Включаем vendor-режим для всех go-команд
+ENV GOFLAGS=-mod=vendor
+ENV CGO_ENABLED=0 GOOS=linux GOARCH=amd64
 
-# Кэшируем зависимости
+# Копируем мод-файлы и vendor заранее (лучше кэшируется)
 COPY go.mod go.sum ./
-RUN go mod download
+COPY vendor ./vendor
 
 # Копируем исходники
 COPY . .
 
-# Сборка статического бинарника + встроенные часовые пояса
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
-    go build -tags timetzdata -o /bin/bot ./cmd/bot
+# Сборка статического бинарника + встроенные таймзоны
+RUN go build -tags timetzdata -o /bin/bot ./cmd/bot
 
-# ---- Runtime stage (distroless, без Alpine и apk) ----
+# ---- Runtime stage (distroless) ----
 FROM gcr.io/distroless/static:nonroot
 WORKDIR /srv
 
-# Кладём бинарь
 COPY --from=build /bin/bot /usr/local/bin/bot
 
-# Запускаем под nonroot
 USER nonroot:nonroot
 ENTRYPOINT ["/usr/local/bin/bot"]
