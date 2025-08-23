@@ -2,27 +2,24 @@
 FROM golang:1.22 AS build
 WORKDIR /app
 
-# Сначала зависимости — кэш лучше работает
+# Кэшируем зависимости
 COPY go.mod go.sum ./
 RUN go mod download
 
-# Копируем остальной код
+# Копируем исходники
 COPY . .
 
-# Сборка статического бинарника + вшитая tzdata
+# Сборка статического бинарника + встроенные часовые пояса
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
     go build -tags timetzdata -o /bin/bot ./cmd/bot
 
-# ---- Runtime stage (no Alpine, no apk) ----
+# ---- Runtime stage (distroless, без Alpine и apk) ----
 FROM gcr.io/distroless/static:nonroot
 WORKDIR /srv
 
 # Кладём бинарь
 COPY --from=build /bin/bot /usr/local/bin/bot
 
-# Опционально: шаблон .env и начальную папку для БД
-COPY ./.env ./.env
-COPY ./data ./data
-
+# Запускаем под nonroot
 USER nonroot:nonroot
 ENTRYPOINT ["/usr/local/bin/bot"]
