@@ -2,6 +2,9 @@
 FROM golang:1.22 AS build
 WORKDIR /app
 
+ENV GOPROXY=https://proxy.golang.org,direct
+ENV GOSUMDB=sum.golang.org
+
 # Кэшируем зависимости
 COPY go.mod go.sum ./
 RUN go mod download
