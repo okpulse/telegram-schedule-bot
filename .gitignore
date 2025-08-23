@@ -14,9 +14,6 @@ build/
 dist/
 *.log
 
-# ==== Dependency directories ====
-vendor/
-
 # ==== Environment files ====
 .env
 .env.*
