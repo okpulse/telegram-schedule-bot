@@ -1,0 +1,41 @@
+
+# ==== Go build artifacts ====
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# ==== Go workspace ====
+bin/
+build/
+dist/
+*.log
+
+# ==== Dependency directories ====
+vendor/
+
+# ==== Environment files ====
+.env
+.env.*
+!.env.example
+
+# ==== Databases, cache, tmp ====
+*.db
+*.sqlite
+*.sqlite3
+*.sql
+tmp/
+*.pid
+
+# ==== IDE/editor configs ====
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+Thumbs.db
+
+# ==== Railway specific ====

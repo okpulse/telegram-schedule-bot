@@ -1,0 +1,12 @@
+version: "3.9"
+services:
+  bot:
+    build: .
+    container_name: tg-schedule-bot
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./data:/srv/data
+    environment:
+      - TZ=Europe/Kyiv
