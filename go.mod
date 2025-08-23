@@ -1,6 +1,6 @@
 module github.com/okpulse/telegram-schedule-bot
 
-go 1.23.0
+go 1.23
 
 require (
 	github.com/go-co-op/gocron/v2 v2.16.3
