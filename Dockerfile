@@ -2,18 +2,18 @@
 FROM golang:1.22 AS build
 WORKDIR /app
 
-# Включаем vendor-режим для всех go-команд
+# Включаем vendor-режим для всех go-команд (не тянуть из сети)
 ENV GOFLAGS=-mod=vendor
 ENV CGO_ENABLED=0 GOOS=linux GOARCH=amd64
 
-# Копируем мод-файлы и vendor заранее (лучше кэшируется)
+# Сначала мод-файлы и vendor (лучше кэшируется)
 COPY go.mod go.sum ./
 COPY vendor ./vendor
 
-# Копируем исходники
+# Затем исходники
 COPY . .
 
-# Сборка статического бинарника + встроенные таймзоны
+# Сборка статического бинаря + встроенные таймзоны (без tzdata пакета)
 RUN go build -tags timetzdata -o /bin/bot ./cmd/bot
 
 # ---- Runtime stage (distroless) ----
