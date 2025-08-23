@@ -10,9 +10,9 @@ import (
 
 	"gopkg.in/telebot.v3"
 
-	"github.com/yourname/telegram-schedule-bot/internal/scheduler"
-	"github.com/yourname/telegram-schedule-bot/internal/store"
-	"github.com/yourname/telegram-schedule-bot/internal/timeutil"
+	"github.com/okpulse/telegram-schedule-bot/internal/scheduler"
+	"github.com/okpulse/telegram-schedule-bot/internal/store"
+	"github.com/okpulse/telegram-schedule-bot/internal/timeutil"
 )
 
 const chooseDaysTitle = "Выберите дни (нажимайте, затем 'Готово')"

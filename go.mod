@@ -1,4 +1,4 @@
-module github.com/yourname/telegram-schedule-bot
+module github.com/okpulse/telegram-schedule-bot
 
 go 1.23.0
 
