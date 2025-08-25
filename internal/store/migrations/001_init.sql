@@ -1,0 +1,23 @@
+PRAGMA foreign_keys = ON;
+
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tg_id INTEGER NOT NULL UNIQUE,
+    tz TEXT NOT NULL DEFAULT 'Europe/Kyiv',
+    control_enabled INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS tasks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    title TEXT NOT NULL,
+    start_h INTEGER NOT NULL,
+    start_m INTEGER NOT NULL,
+    end_h INTEGER NOT NULL,
+    end_m INTEGER NOT NULL,
+    days_mask INTEGER NOT NULL,
+    enabled INTEGER NOT NULL DEFAULT 1,
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_tasks_user_id ON tasks(user_id);
