@@ -52,6 +52,10 @@ type BotApp struct {
 	// per-task list buttons
 	btnTaskToggle telebot.Btn
 	btnTaskDelete telebot.Btn
+
+	// post-add confirmation buttons
+	btnAddAnother   telebot.Btn
+	btnStartControl telebot.Btn
 }
 
 type AddState struct {
@@ -110,6 +114,10 @@ func (a *BotApp) SetupHandlers(defaultTZ string) {
 	a.btnTaskToggle = telebot.Btn{Unique: "task_toggle"}
 	a.btnTaskDelete = telebot.Btn{Unique: "task_delete"}
 
+	// post-add confirmation buttons
+	a.btnAddAnother = telebot.Btn{Unique: "add_another"}
+	a.btnStartControl = telebot.Btn{Unique: "start_control"}
+
 	// commands
 	a.Bot.Handle("/start", func(c telebot.Context) error {
 		_, _ = a.St.GetOrCreateUser(c.Sender().ID, defaultTZ)
@@ -154,6 +162,9 @@ func (a *BotApp) SetupHandlers(defaultTZ string) {
 	// per-task list
 	a.Bot.Handle(&a.btnTaskToggle, a.cbTaskToggle)
 	a.Bot.Handle(&a.btnTaskDelete, a.cbTaskDelete)
+	// post-add confirmation buttons
+	a.Bot.Handle(&a.btnAddAnother, a.cbAddAnother)
+	a.Bot.Handle(&a.btnStartControl, a.cbStartControl)
 
 	// text for add flow
 	a.Bot.Handle(telebot.OnText, a.handleText)
@@ -386,6 +397,45 @@ func (a *BotApp) cbTaskDelete(c telebot.Context) error {
 	return nil
 }
 
+// NEW: post-add callbacks
+
+// cbAddAnother — немедленно запускает мастер добавления ещё одной задачи
+func (a *BotApp) cbAddAnother(c telebot.Context) error {
+	_ = c.Respond(&telebot.CallbackResponse{Text: "Добавляем ещё одну…", ShowAlert: false})
+	// Запускаем мастер добавления (как /add), без необходимости знать defaultTZ:
+	a.addMu.Lock()
+	a.addState[c.Sender().ID] = &AddState{Step: 1}
+	a.addMu.Unlock()
+	return c.Send("Введите название задачи (например: Написать статью)")
+}
+
+// cbStartControl — включает контроль (как /run) и помечает исходное сообщение
+func (a *BotApp) cbStartControl(c telebot.Context) error {
+	_ = c.Respond(&telebot.CallbackResponse{Text: "Контроль запущен", ShowAlert: false})
+
+	u, err := a.St.GetUserByTGID(c.Sender().ID)
+	if err != nil {
+		return c.Edit("Сначала /start")
+	}
+	if err := a.St.SetControl(u.ID, true); err != nil {
+		return c.Edit("Ошибка при включении контроля")
+	}
+	u.ControlEnabled = true
+	if err := a.Sch.ScheduleAllForUser(u); err != nil {
+		log.Println("schedule error:", err)
+	}
+
+	// Обновим сообщение с кнопками
+	if m := c.Message(); m != nil {
+		kb := &telebot.ReplyMarkup{}
+		// Оставим только "Ещё задачу"
+		bAdd := kb.Data("➕ Ещё задачу", a.btnAddAnother.Unique, "go")
+		kb.Inline(kb.Row(bAdd))
+		return c.Edit(m.Text+"\n\n▶️ Контроль запущен ✅", kb)
+	}
+	return c.Send("▶️ Контроль запущен ✅")
+}
+
 // command handlers
 
 func (a *BotApp) finishAdd(c telebot.Context) error {
@@ -416,7 +466,14 @@ func (a *BotApp) finishAdd(c telebot.Context) error {
 	}
 
 	t, _ := a.St.GetTask(u.ID, taskID)
-	return c.Send("✅Задача добавлена.\n ⚠️Не забудь запустить контроль!\n" + a.buildTaskText(t))
+
+	// Новое подтверждение с кнопками
+	msgText := "✅ Задача добавлена.\n" + a.buildTaskText(t) + "\n\nМожешь добавить ещё одну или сразу запустить контроль:"
+	kb := &telebot.ReplyMarkup{}
+	bAdd := kb.Data("➕ Ещё задачу", a.btnAddAnother.Unique, "go")
+	bRun := kb.Data("▶️ Запустить контроль", a.btnStartControl.Unique, "go")
+	kb.Inline(kb.Row(bAdd, bRun))
+	return c.Send(msgText, kb)
 }
 
 func (a *BotApp) handleList(c telebot.Context) error {
